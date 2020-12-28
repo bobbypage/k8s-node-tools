@@ -1,0 +1,59 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: enable-panic-oom-sysctl
+  labels:
+    app: enable-panic-oom-sysctl
+spec:
+  selector:
+    matchLabels:
+      name: enable-panic-oom-sysctl
+  template:
+    metadata:
+      labels:
+        name: enable-panic-oom-sysctl
+    spec:
+      nodeSelector:
+        "enable-panic-oom-sysctl": "true"
+      hostPID: true
+      containers:
+        - name: enable-panic-oom-sysctl
+          image: ubuntu
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          command:
+            - /usr/bin/nsenter
+            - -t 1
+            - -m
+            - -u
+            - -i
+            - -n
+            - -p
+            - --
+            - /bin/bash
+            - -c
+            - |
+
+              set -o errexit
+              set -o pipefail
+              set -o nounset
+
+              echo "setting sysctls"
+              sysctl -w vm.panic_on_oom=1
+              echo "sysctls are set"
+              sleep infinity
